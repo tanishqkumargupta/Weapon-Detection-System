@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Job Sequencing</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: linear-gradient(to right, #a1c4fd, #c2e9fb);
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; margin: 0;
+    }
+    .container {
+      background: #fff; padding: 24px; border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1); width: 90%; max-width: 800px;
+    }
+    h1 { text-align: center; margin-bottom: 20px; }
+    label, input { display: block; width: 100%; margin-bottom: 10px; }
+    input {
+      padding: 10px; border: 1px solid #ccc; border-radius: 6px;
+    }
+    button {
+      width: 100%; padding: 12px; border: none;
+      background: linear-gradient(to right, #36d1dc, #5b86e5);
+      color: #fff; font-weight: bold; border-radius: 6px; cursor: pointer;
+    }
+    button:hover { opacity: 0.9; }
+    .result { margin-top: 20px; }
+    table {
+      width: 100%; border-collapse: collapse; margin-top: 16px;
+    }
+    th, td {
+      border: 1px solid #ccc; padding: 8px; text-align: center;
+    }
+    th { background: #e3f2fd; }
+    .badge-container {
+      display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 16px;
+    }
+    .badge {
+      background: linear-gradient(to right, #ff6a00, #ee0979);
+      color: white; padding: 10px 16px; border-radius: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Job Sequencing Problem</h1>
+    <label>Number of jobs:</label>
+    <input type="number" id="numJobs" placeholder="e.g., 4" />
+    <label>Deadlines (space-separated):</label>
+    <input type="text" id="deadlines" placeholder="e.g., 2 1 2 1" />
+    <label>Profits (space-separated):</label>
+    <input type="text" id="profits" placeholder="e.g., 100 19 27 25" />
+    <button onclick="solve()">Get Schedule</button>
+    <div class="result" id="output"></div>
+  </div>
+
+  <script>
+    const solve = () => {
+      const n = +numJobs.value;
+      const d = deadlines.value.trim().split(" ").map(Number);
+      const p = profits.value.trim().split(" ").map(Number);
+      const out = document.getElementById("output");
+      if (d.length !== n || p.length !== n || d.some(isNaN) || p.some(isNaN)) {
+        out.innerHTML = "<strong style='color:red;'>Invalid input.</strong>";
+        return;
+      }
+
+      const jobs = d.map((deadline, i) => ({ id: i, deadline, profit: p[i] }))
+                    .sort((a, b) => b.profit - a.profit);
+      const maxD = Math.max(...d), slots = Array(maxD).fill(null);
+      let total = 0;
+
+      for (let job of jobs)
+        for (let t = job.deadline - 1; t >= 0; t--)
+          if (!slots[t]) { slots[t] = job; total += job.profit; break; }
+
+      const scheduled = slots.filter(Boolean);
+
+      let table = `<table><tr><th>Job</th>${[...Array(n)].map((_,i)=>`<th>J${i}</th>`).join('')}</tr>
+                   <tr><td>Deadline</td>${d.map(v=>`<td>${v}</td>`).join('')}</tr>
+                   <tr><td>Profit</td>${p.map(v=>`<td>${v}</td>`).join('')}</tr>
+                   <tr><td>Scheduled</td>${[...Array(n)].map((_,i)=>`<td>${scheduled.some(j=>j.id===i)?'Yes':'No'}</td>`).join('')}</tr></table>`;
+
+      let badges = scheduled.map(j => `<div class="badge">J${j.id} (D:${j.deadline}|P:${j.profit})</div>`).join('<div>→</div>');
+
+      out.innerHTML = `<div><strong>Job Details:</strong></div>${table}
+                       <div><strong>Scheduled Order:</strong></div>
+                       <div class="badge-container">${badges}</div>
+                       <div style="margin-top:12px;"><strong>Total Profit:</strong> ${total}</div>`;
+    };
+  </script>
+</body>
+</html>
