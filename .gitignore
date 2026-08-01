@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+
+# Database
+instance/
+*.db
+
+# Local YOLO clone
+yolov5/
+
+# Python virtual environments
+.venv/
+venv/
+env/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
