@@ -1,9 +1,22 @@
+from flask import Response
+from camera import generate_frames
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
-from db_models import db, User
+from db_models import db, User, Detection
+import os
+import cv2
+
+from detector import detect
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
+
+UPLOAD_FOLDER = "uploads"
+RESULT_FOLDER = "static/results"
+
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+app.config["RESULT_FOLDER"] = RESULT_FOLDER
 
 app.config["SECRET_KEY"] = "wds-secret-key"
 
@@ -103,9 +116,25 @@ def dashboard():
     if "user_id" not in session:
         return redirect(url_for("login"))
 
+    total = Detection.query.count()
+
+    latest = Detection.query.order_by(
+        Detection.timestamp.desc()
+    ).first()
+
+    if latest:
+        latest_threat = latest.threat
+        latest_confidence = round(latest.confidence * 100, 2)
+    else:
+        latest_threat = "None"
+        latest_confidence = 0
+
     return render_template(
         "dashboard.html",
-        username=session["username"]
+        username=session["username"],
+        total=total,
+        latest_threat=latest_threat,
+        latest_confidence=latest_confidence
     )
 
 
@@ -118,40 +147,96 @@ def camera():
     if request.method == "POST":
 
         session["camera_type"] = request.form["camera_type"]
-
         session["camera_url"] = request.form["camera_url"]
 
-        return redirect(url_for("live"))
+        flash("Camera configured successfully.")
+
+        return redirect(url_for("camera"))
 
     return render_template("camera.html")
 
-@app.route("/live")
-def live():
+
+
+@app.route("/upload", methods=["GET", "POST"])
+def upload():
 
     if "user_id" not in session:
         return redirect(url_for("login"))
 
-    return """
-    <h2>Live Detection</h2>
+    if request.method == "POST":
 
-    <p>
+        file = request.files.get("image")
 
-    Camera configured successfully.
+        if file is None or file.filename == "":
+            flash("Please select an image.")
+            return redirect(url_for("upload"))
 
-    </p>
+        filename = secure_filename(file.filename)
 
-    <p>
+        upload_path = os.path.join(
+            app.config["UPLOAD_FOLDER"],
+            filename
+        )
 
-    YOLOv5 integration will appear here.
+        file.save(upload_path)
 
-    </p>
+        image = cv2.imread(upload_path)
 
-    <a href='/dashboard'>
+        rendered, detections = detect(image)
 
-    Dashboard
+        for item in detections:
 
-    </a>
-    """
+            detection = Detection(
+                filename=filename,
+                threat=item["class"],
+                confidence=item["confidence"],
+                source="Image Upload"
+            )
+
+            db.session.add(detection)
+
+        db.session.commit()
+
+        result_name = "result_" + filename
+
+        result_path = os.path.join(
+            app.config["RESULT_FOLDER"],
+            result_name
+        )
+
+        cv2.imwrite(result_path, rendered)
+
+        return render_template(
+            "upload.html",
+            image=url_for(
+                "static",
+                filename="results/" + result_name
+            ),
+            detections=detections
+        )
+
+    return render_template(
+        "upload.html",
+        image=None,
+        detections=None
+    )
+
+
+@app.route("/history")
+def history():
+
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+
+    detections = Detection.query.order_by(
+        Detection.timestamp.desc()
+    ).all()
+
+    return render_template(
+        "history.html",
+        detections=detections
+    )
+
 
 @app.route("/logout")
 def logout():
@@ -160,6 +245,19 @@ def logout():
 
     return redirect("/")
 
+@app.route("/video_feed")
+def video_feed():
+
+    source = 0
+
+    if session.get("camera_type") == "ip":
+
+        source = session.get("camera_url")
+
+    return Response(
+        generate_frames(source),
+        mimetype="multipart/x-mixed-replace; boundary=frame"
+    )
 
 if __name__ == "__main__":
 

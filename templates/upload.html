@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<link
+rel="stylesheet"
+href="{{ url_for('static', filename='css/main.css') }}">
+
+<title>Upload</title>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Weapon Detection</h2>
+
+<form method="POST" enctype="multipart/form-data">
+
+    <input type="file" name="image" required>
+
+    <br><br>
+
+    <button type="submit">
+        Detect
+    </button>
+
+</form>
+
+{% if image %}
+
+<hr>
+
+<h3>Detection Result</h3>
+
+<img src="{{ image }}">
+
+{% if detections %}
+
+<h3>Detected Objects</h3>
+
+<ul>
+
+{% for item in detections %}
+
+<li>
+    {{ item.class }} -
+    {{ "%.2f"|format(item.confidence * 100) }}%
+</li>
+
+{% endfor %}
+
+</ul>
+
+{% endif %}
+
+{% endif %}
+
+</div>
+
+</body>
+
+</html>

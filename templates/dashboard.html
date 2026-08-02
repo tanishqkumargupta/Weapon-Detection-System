@@ -1,124 +1,109 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
 
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<link
+rel="stylesheet"
+href="{{ url_for('static', filename='css/main.css') }}">
 
 <title>Dashboard</title>
-
-<style>
-
-body{
-    font-family:Arial,sans-serif;
-    background:#f4f4f4;
-    margin:0;
-}
-
-header{
-
-    background:#1f2937;
-    color:white;
-    padding:20px;
-
-}
-
-.container{
-
-    width:90%;
-    max-width:900px;
-    margin:50px auto;
-
-}
-
-.card{
-
-    background:white;
-    padding:30px;
-    border-radius:8px;
-    box-shadow:0 5px 12px rgba(0,0,0,.1);
-
-}
-
-.btn{
-
-    display:inline-block;
-    margin-top:20px;
-    margin-right:10px;
-
-    text-decoration:none;
-
-    color:white;
-
-    background:#2563eb;
-
-    padding:12px 18px;
-
-    border-radius:6px;
-
-}
-
-.logout{
-
-    background:#dc2626;
-
-}
-
-</style>
 
 </head>
 
 <body>
 
-<header>
-
-<h2>
-
-Weapon Detection Security System
-
-</h2>
-
-</header>
-
 <div class="container">
 
 <div class="card">
 
-<h1>
-
-Welcome {{ username }}
-
-</h1>
+<h1>Weapon Detection Security System</h1>
 
 <p>
 
-You are successfully logged in.
+Welcome,
+
+<b>{{ username }}</b>
 
 </p>
 
-<p>
+</div>
 
-Status:
-<strong>Ready</strong>
+<div class="stat-grid">
 
-</p>
+<div class="stat-card">
 
-<a
-class="btn"
-href="{{ url_for('camera') }}">
+<h3>Total Detections</h3>
 
-Configure Camera
+<div class="stat-value">
+
+{{ total }}
+
+</div>
+
+</div>
+
+<div class="stat-card">
+
+<h3>Last Threat</h3>
+
+<div class="stat-value">
+
+{{ latest_threat }}
+
+</div>
+
+</div>
+
+<div class="stat-card">
+
+<h3>Confidence</h3>
+
+<div class="stat-value">
+
+{{ latest_confidence }}%
+
+</div>
+
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="nav-buttons">
+
+<a class="btn" href="{{ url_for('upload') }}">
+
+Upload Detection
 
 </a>
 
-<a
-class="btn logout"
-href="{{ url_for('logout') }}">
+<a class="btn" href="{{ url_for('camera') }}">
+
+Live Camera
+
+</a>
+
+<a class="btn" href="{{ url_for('history') }}">
+
+Detection History
+
+</a>
+
+<a class="btn" href="{{ url_for('logout') }}">
 
 Logout
 
 </a>
+
+</div>
 
 </div>
 

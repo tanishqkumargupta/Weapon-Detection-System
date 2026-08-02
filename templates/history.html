@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<link
+rel="stylesheet"
+href="{{ url_for('static', filename='css/main.css') }}">
+
+<title>Detection History</title>
+
+</head>
+
+<body>
+
+<h2>Detection History</h2>
+
+<table>
+
+<tr>
+
+<th>Time</th>
+<th>Image</th>
+<th>Threat</th>
+<th>Confidence</th>
+<th>Source</th>
+
+</tr>
+
+{% for row in detections %}
+
+<tr>
+
+<td>{{ row.timestamp }}</td>
+
+<td>{{ row.filename }}</td>
+
+<td>{{ row.threat }}</td>
+
+<td>{{ "%.2f"|format(row.confidence*100) }}%</td>
+
+<td>{{ row.source }}</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</body>
+
+</html>
