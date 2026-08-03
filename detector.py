@@ -2,6 +2,7 @@ import pathlib
 import sys
 import torch
 import cv2
+from wds_utils.label_mapper import display_label, THREAT_CLASSES
 
 ROOT = pathlib.Path(__file__).parent.resolve()
 YOLO_PATH = ROOT / "yolov5"
@@ -36,8 +37,17 @@ def detect(frame):
 
     for *box, conf, cls in results.xyxy[0].tolist():
 
+        raw_class = model.names[int(cls)]
+
+        display_class = display_label(raw_class)
+
+    # Ignore non-threat classes
+        if display_class not in THREAT_CLASSES:
+            continue
+
         detections.append({
-            "class": model.names[int(cls)],
+            "class": display_class,
+            "raw_class": raw_class,
             "confidence": float(conf)
         })
 

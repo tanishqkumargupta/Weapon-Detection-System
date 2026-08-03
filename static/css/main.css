@@ -1,174 +1,136 @@
-/* =========================
-   WDS Global Theme
-========================= */
+/* =============================================================
+   WDS Main Stylesheet
+   Import order matters: variables -> reset/base -> layout ->
+   components -> responsive. Page-specific files are linked
+   separately by each template.
+============================================================= */
 
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@import url('variables.css');
+@import url('layout.css');
+@import url('components.css');
+@import url('responsive.css');
+
+/* ---------------- Reset ---------------- */
+*,
+*::before,
+*::after{
+  box-sizing: border-box;
+}
+
+html{
+  scroll-behavior: smooth;
 }
 
 body{
-
-    background:#0F172A;
-    color:#F8FAFC;
-
-    font-family:
-    "Segoe UI",
-    Arial,
-    sans-serif;
-
-    min-height:100vh;
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg-void);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  transition: background var(--dur-base) var(--ease-out), color var(--dur-base) var(--ease-out);
 }
 
-.container{
-
-    width:90%;
-    max-width:1200px;
-
-    margin:auto;
-
-    padding:40px 0;
+/* Ambient background: soft radial glow + faint scan grid */
+body{
+  background-image:
+    radial-gradient(1100px 600px at 12% -10%, var(--signal-soft), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, var(--accent-2-soft), transparent 55%),
+    linear-gradient(var(--bg-void), var(--bg-void));
+  background-attachment: fixed;
 }
 
-.card{
-
-    background:#1E293B;
-
-    border-radius:16px;
-
-    padding:25px;
-
-    margin-bottom:25px;
-
-    box-shadow:
-    0 8px 30px rgba(0,0,0,.25);
-}
-
-h1,h2,h3{
-
-    margin-bottom:15px;
-
-    font-weight:700;
-}
-
-p{
-
-    color:#CBD5E1;
-
-    line-height:1.6;
+img{
+  max-width: 100%;
+  display: block;
 }
 
 a{
-
-    text-decoration:none;
+  color: inherit;
+  text-decoration: none;
 }
 
-button,
-.btn{
-
-    background:#2563EB;
-
-    color:white;
-
-    border:none;
-
-    border-radius:10px;
-
-    padding:12px 22px;
-
-    cursor:pointer;
-
-    font-size:16px;
-
-    transition:.25s;
+ul, ol{
+  list-style: none;
 }
 
-button:hover,
-.btn:hover{
-
-    background:#1D4ED8;
-
-    transform:translateY(-2px);
+h1, h2, h3, h4{
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  line-height: 1.15;
 }
 
-input{
+h1{ font-size: clamp(2rem, 4vw, 3rem); }
+h2{ font-size: clamp(1.5rem, 2.6vw, 2.1rem); }
+h3{ font-size: 1.15rem; }
 
-    width:100%;
-
-    padding:14px;
-
-    margin:10px 0;
-
-    border-radius:10px;
-
-    border:1px solid #334155;
-
-    background:#0F172A;
-
-    color:white;
+p{
+  color: var(--text-secondary);
 }
 
-table{
-
-    width:100%;
-
-    border-collapse:collapse;
-
-    margin-top:20px;
+code, .mono{
+  font-family: var(--font-mono);
 }
 
-th{
-
-    background:#2563EB;
-
-    padding:15px;
+::selection{
+  background: var(--signal);
+  color: var(--text-on-signal);
 }
 
-td{
+::-webkit-scrollbar{ width: 10px; height: 10px; }
+::-webkit-scrollbar-track{ background: transparent; }
+::-webkit-scrollbar-thumb{
+  background: var(--border-glass-strong);
+  border-radius: var(--r-pill);
+}
+::-webkit-scrollbar-thumb:hover{ background: var(--text-muted); }
 
-    padding:15px;
-
-    border-bottom:1px solid #334155;
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
-.stat-grid{
-
-    display:grid;
-
-    grid-template-columns:
-    repeat(auto-fit,minmax(220px,1fr));
-
-    gap:20px;
+/* Focus visibility */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible{
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
 }
 
-.stat-card{
-
-    background:#1E293B;
-
-    border-radius:16px;
-
-    padding:25px;
-
-    text-align:center;
+/* Utility */
+.visually-hidden{
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
 }
 
-.stat-value{
+.text-center{ text-align: center; }
+.mt-0{ margin-top: 0; }
 
-    font-size:38px;
-
-    font-weight:bold;
-
-    margin-top:15px;
+/* Page fade-in transition */
+.page-fade{
+  animation: pageFade var(--dur-slow) var(--ease-out) both;
 }
-
-.nav-buttons{
-
-    display:flex;
-
-    flex-wrap:wrap;
-
-    gap:15px;
-
-    margin-top:20px;
+@keyframes pageFade{
+  from{ opacity: 0; transform: translateY(6px); }
+  to{ opacity: 1; transform: translateY(0); }
 }

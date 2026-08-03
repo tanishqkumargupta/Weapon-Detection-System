@@ -9,6 +9,9 @@ import cv2
 
 from detector import detect
 from werkzeug.utils import secure_filename
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 
@@ -129,12 +132,20 @@ def dashboard():
         latest_threat = "None"
         latest_confidence = 0
 
+    # NOTE (frontend modernization): added to power the "Recent
+    # Detections" panel on the redesigned dashboard. Uses the existing
+    # Detection model/table only -- no schema or route changes.
+    recent = Detection.query.order_by(
+        Detection.timestamp.desc()
+    ).limit(5).all()
+
     return render_template(
         "dashboard.html",
         username=session["username"],
         total=total,
         latest_threat=latest_threat,
-        latest_confidence=latest_confidence
+        latest_confidence=latest_confidence,
+        recent=recent
     )
 
 
@@ -146,12 +157,17 @@ def camera():
 
     if request.method == "POST":
 
-        session["camera_type"] = request.form["camera_type"]
-        session["camera_url"] = request.form["camera_url"]
+        camera_type = request.form["camera_type"]
+        camera_url = request.form.get("camera_url", "").strip()
 
-        flash("Camera configured successfully.")
+        if camera_type == "ip" and camera_url == "":
+            flash("Please enter an IP camera URL.")
+            return redirect(url_for("camera"))
 
-        return redirect(url_for("camera"))
+        session["camera_type"] = camera_type
+        session["camera_url"] = camera_url
+
+        return redirect(url_for("live"))
 
     return render_template("camera.html")
 

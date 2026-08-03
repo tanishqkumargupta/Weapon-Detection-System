@@ -1,22 +1,42 @@
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
 
-# Database
-instance/
-*.db
-
-# Local YOLO clone
-yolov5/
-
-# Python virtual environments
-.venv/
+# Virtual environments
 venv/
+.venv/
 env/
 
-# OS
-.DS_Store
-Thumbs.db
+# Environment variables
+.env
 
-# VS Code
+# Flask
+instance/
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE
 .vscode/
+.idea/
+
+# Logs
+*.log
+
+# Python cache
+.pytest_cache/
+.mypy_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Build
+build/
+dist/
+
+# Runtime generated files
+static/snapshots/*
+uploads/*
