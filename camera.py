@@ -4,14 +4,16 @@ from datetime import datetime
 
 from detector import detect
 from db_models import db, Detection
-from flask import current_app
 from email_service import send_alert_email
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
 
 last_saved = None
 last_email = None
 
 
-def generate_frames(source=0):
+def generate_frames(app, source=0):
 
     global last_saved, last_email
 
@@ -45,26 +47,24 @@ def generate_frames(source=0):
 
                 filename = now.strftime("%Y%m%d_%H%M%S") + ".jpg"
 
-                path = os.path.join(
-                    current_app.static_folder,
-                    "snapshots",
-                    filename
-                )
+                path = BASE_DIR / "static" / "snapshots" / filename
 
-                cv2.imwrite(path, rendered)
+                cv2.imwrite(str(path), rendered)
 
-                for item in threats:
+                with app.app_context():
 
-                    detection = Detection(
-                        filename=filename,
-                        threat=item["class"],
-                        confidence=item["confidence"],
-                        source="Live Camera"
-                    )
+                    for item in threats:
 
-                    db.session.add(detection)
+                        detection = Detection(
+                            filename=filename,
+                            threat=item["class"],
+                            confidence=item["confidence"],
+                            source="Live Camera"
+                        )
 
-                db.session.commit()
+                        db.session.add(detection)
+
+                    db.session.commit()
 
                 if (
                     last_email is None
@@ -76,7 +76,7 @@ def generate_frames(source=0):
                         threat=threats[0]["class"],
                         confidence=threats[0]["confidence"],
                         timestamp=now.strftime("%d %b %Y | %I:%M %p"),
-                        image_path=path
+                        image_path=str(path)
                     )
 
                     last_email = now

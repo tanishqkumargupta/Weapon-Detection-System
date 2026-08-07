@@ -167,7 +167,7 @@ def camera():
         session["camera_type"] = camera_type
         session["camera_url"] = camera_url
 
-        return redirect(url_for("live"))
+        return redirect(url_for("camera"))
 
     return render_template("camera.html")
 
@@ -271,7 +271,7 @@ def video_feed():
         source = session.get("camera_url")
 
     return Response(
-        generate_frames(source),
+        generate_frames(app, source),
         mimetype="multipart/x-mixed-replace; boundary=frame"
     )
 

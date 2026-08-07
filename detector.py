@@ -3,6 +3,12 @@ import sys
 import torch
 import cv2
 from wds_utils.label_mapper import display_label, THREAT_CLASSES
+import os
+import pathlib
+
+# Fix loading Linux-trained PyTorch models on Windows
+if os.name == "nt":
+    pathlib.PosixPath = pathlib.WindowsPath
 
 ROOT = pathlib.Path(__file__).parent.resolve()
 YOLO_PATH = ROOT / "yolov5"
