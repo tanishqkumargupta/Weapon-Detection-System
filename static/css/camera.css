@@ -98,7 +98,10 @@
 }
 
 .feed-frame img[data-feed-img]{
-  display: none;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .feed-placeholder strong{
