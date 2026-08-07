@@ -38,7 +38,9 @@
 
     function showPlaceholder(show) {
       if (placeholder) placeholder.classList.toggle("is-visible", show);
-      if (feedImg) feedImg.style.display = show ? "none" : "";
+      if (feedImg) {
+        feedImg.style.display = show ? "none" : "block";
+      }
     }
 
     if (feedImg) {
