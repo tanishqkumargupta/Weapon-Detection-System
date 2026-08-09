@@ -1,11 +1,12 @@
 from flask import Response
-from camera import generate_frames
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from camera import generate_frames,process_detected_frame
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from db_models import db, User, Detection
 import os
 import cv2
+import numpy as np
 
 from detector import detect
 from werkzeug.utils import secure_filename
@@ -274,6 +275,66 @@ def video_feed():
         generate_frames(app, source),
         mimetype="multipart/x-mixed-replace; boundary=frame"
     )
+
+
+@app.route("/detect_frame", methods=["POST"])
+def detect_frame():
+
+    if "user_id" not in session:
+        return jsonify({
+            "error": "Unauthorized"
+        }), 401
+
+    if "frame" not in request.files:
+        return jsonify({
+            "error": "No frame received"
+        }), 400
+
+    file = request.files["frame"]
+
+    image_bytes = file.read()
+
+    if not image_bytes:
+        return jsonify({
+            "error": "Empty frame"
+        }), 400
+
+    image_array = np.frombuffer(
+        image_bytes,
+        dtype=np.uint8
+    )
+
+    frame = cv2.imdecode(
+        image_array,
+        cv2.IMREAD_COLOR
+    )
+
+    if frame is None:
+        return jsonify({
+            "error": "Invalid image"
+        }), 400
+
+    rendered, detections = process_detected_frame(
+        frame,
+        app,
+        source="Webcam"
+    )
+
+    success, buffer = cv2.imencode(
+        ".jpg",
+        rendered
+    )
+
+    if not success:
+        return jsonify({
+            "error": "Unable to encode frame"
+        }), 500
+
+    return Response(
+        buffer.tobytes(),
+        mimetype="image/jpeg"
+    )
+
 
 if __name__ == "__main__":
 
