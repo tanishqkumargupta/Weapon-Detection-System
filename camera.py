@@ -17,7 +17,14 @@ SNAPSHOT_DIR = BASE_DIR / "static" / "snapshots"
 SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def _save_detection(threats, rendered, source, last_saved, last_email):
+def _save_detection(
+    threats,
+    rendered,
+    source,
+    last_saved,
+    last_email,
+    recipient
+):
     """
     Save a detection snapshot, database records, and email alert.
 
@@ -74,7 +81,7 @@ def _save_detection(threats, rendered, source, last_saved, last_email):
         try:
 
             send_alert_email(
-                receiver=os.environ.get("ALERT_EMAIL"),
+                receiver=recipient,
                 threat=threats[0]["class"],
                 confidence=threats[0]["confidence"],
                 timestamp=now.strftime(
@@ -96,7 +103,12 @@ def _save_detection(threats, rendered, source, last_saved, last_email):
     return last_saved, last_email
 
 
-def process_detected_frame(frame, app, source="Live Camera"):
+def process_detected_frame(
+    frame,
+    app,
+    source="Live Camera",
+    recipient=None
+):
     """
     Process one frame through YOLOv5.
 
@@ -130,14 +142,15 @@ def process_detected_frame(frame, app, source="Live Camera"):
                 rendered=rendered,
                 source=source,
                 last_saved=current_app._last_saved,
-                last_email=current_app._last_email
+                last_email=current_app._last_email,
+                recipient=recipient
             )
         )
 
     return rendered, detections
 
 
-def generate_frames(app, source):
+def generate_frames(app, source, recipient):
     """
     Generate a continuous MJPEG stream from an IP camera (or webcam index)
     with YOLOv5 detection applied to every frame.
@@ -174,10 +187,11 @@ def generate_frames(app, source):
                 # process_detected_frame already saves snapshots/DB rows/
                 # email alerts internally (with its own cooldown state), so
                 # there is no separate save step needed here.
-                rendered, threats = process_detected_frame(
+               rendered, threats = process_detected_frame(
                     frame,
                     app,
-                    source="IP Camera"
+                    source="IP Camera",
+                    recipient=recipient
                 )
 
             except Exception as error:
