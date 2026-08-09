@@ -29,10 +29,11 @@ Upload an image or go live, and WDS detects firearms, knives, and blunt weapons 
 - [Configuration](#configuration)
 - [Running the App](#running-the-app)
 - [Usage](#usage)
-- [Database Schema](#database-schema)
+- [Database](#database)
 - [Testing](#testing)
 - [Design System](#design-system)
 - [Roadmap](#roadmap)
+- [Deployment Notes](#deployment-notes)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -42,11 +43,11 @@ Upload an image or go live, and WDS detects firearms, knives, and blunt weapons 
 
 **Weapon Detection System (WDS)** is a full-stack Flask application that wraps a custom-trained **YOLOv5** model in a real, usable security workflow — not just an inference script.
 
-It accepts three kinds of input:
+It accepts three kinds of input, each handled through a different path:
 
-- 🖼️ **Uploaded images**
-- 🎥 **A local webcam**
-- 📡 **An IP / mobile camera stream** (e.g. an IP Webcam app URL)
+- 🖼️ **Uploaded images** — processed server-side with OpenCV + YOLOv5
+- 🎥 **A browser webcam** — captured directly in the browser and sent frame-by-frame to the server for detection
+- 📡 **An IP / mobile camera stream** — pulled and processed server-side (e.g. an IP Webcam app URL)
 
 Every frame or image is run through the detection model. If a genuine threat class is found (a firearm, knife, or blunt weapon — see [How Detection Works](#how-detection-works)), WDS:
 
@@ -71,17 +72,20 @@ Every frame or image is run through the detection model. If a genuine threat cla
 ### 📤 Image Upload Detection
 - Upload a single image, get an annotated result rendered back with per-object confidence scores
 
-### 🎥 Live Webcam Detection
-- Streams frames from a local webcam through `/video_feed` (MJPEG, `multipart/x-mixed-replace`)
-- Detections are drawn on the live feed in real time
+### 🎥 Browser Webcam Detection
+- The browser accesses the local webcam directly via `navigator.mediaDevices.getUserMedia()` — no server-side camera access involved
+- JavaScript captures individual frames and posts them to `POST /detect_frame`
+- Flask runs YOLOv5 on each frame and returns an annotated image, which is rendered onto a detection canvas in the browser
 
 ### 📡 IP Camera Detection
-- Point WDS at any MJPEG/IP camera stream URL (e.g. `http://192.168.x.x:8080/video`) and it's treated exactly like a webcam
+- Point WDS at an MJPEG/IP camera stream URL (e.g. `http://192.168.x.x:8080/video`)
+- The server pulls the stream with OpenCV `VideoCapture` and serves an annotated MJPEG stream back through `/video_feed`
+- The camera page lets you pick **Webcam** or **IP Camera**; the Start Live Feed / Start Detection controls follow whichever type is selected, and only one feed is active at a time
 
 ### 📧 Smart Email Alerts
 - Rich HTML email with threat type, confidence, source, and timestamp
 - The triggering snapshot is attached automatically
-- **5-second** save cooldown and **60-second** email cooldown prevent a continuous detection from flooding the database or your inbox
+- A **15-second** snapshot cooldown and a **60-second** email cooldown mean not every frame is saved and not every detection sends an email — repeated detections in a short window are throttled
 
 ### 📊 Dashboard
 - Total detection count, most recent threat + confidence, and a "Recent Detections" panel (last 5 events)
@@ -104,34 +108,41 @@ Only detections that map to `Firearm`, `Knife`, or `Blunt Weapon` are treated as
 
 ## Architecture
 
+Image upload and IP camera detection are processed server-side; browser webcam detection is processed frame-by-frame through a dedicated endpoint, since the browser accesses the webcam directly instead of the server.
+
 ```
-User
+User (browser)
   │
   ▼
 Flask Web Application  (auth, sessions, routing)
   │
-  ├── Image Upload ──┐
-  ├── Live Webcam ────┤
-  └── IP Camera ──────┘
-  │
-  ▼
-OpenCV  (frame capture & preprocessing)
-  │
-  ▼
-YOLOv5 Detection Engine  (PyTorch, custom-trained weights)
-  │
-  ▼
-Threat Classification  (wds_utils/label_mapper.py)
-  │
-  ├── SQLite Database        (detection records)
-  ├── Snapshot Storage       (annotated frame capture)
-  └── Email Alerts           (SMTP, rate-limited)
-  │
-  ▼
-Dashboard  →  Detection History
+  ├── Image Upload ────────────────┐
+  │                                 │
+  ├── Browser Webcam                │
+  │     getUserMedia() → JS frame   │
+  │     capture → POST /detect_frame│
+  │                                 │
+  └── IP Camera                     │
+        stream URL → /video_feed    │
+        → OpenCV VideoCapture       │
+        │                           │
+        ▼                           ▼
+  YOLOv5 Detection Engine  (PyTorch, custom-trained weights)
+        │
+        ▼
+  Threat Classification  (wds_utils/label_mapper.py)
+        │
+        ├── SQLite Database        (detection records)
+        ├── Snapshot Storage       (annotated frame capture, rate-limited)
+        └── Email Alerts           (SMTP, rate-limited)
+        │
+        ▼
+  Dashboard  →  Detection History
 ```
 
-> A full diagram pack (system architecture, application workflow, detection pipeline, database ER diagram, and repository map — SVG + PNG, dark theme) lives in [`docs/diagrams/`](docs/diagrams) and is embedded below.
+Image uploads and IP camera frames return an annotated result/stream directly from Flask. Browser webcam frames are annotated server-side per request and rendered onto a canvas in the browser.
+
+> A diagram pack (system architecture, application workflow, detection pipeline, and repository map — SVG + PNG, dark theme) lives in [`docs/diagrams/`](docs/diagrams) and is embedded below. These diagrams reflect the general system layout; refer to the flow described above for the current camera-specific request paths.
 
 <details>
 <summary><strong>📊 Diagram Pack</strong> (click to expand)</summary>
@@ -139,8 +150,7 @@ Dashboard  →  Detection History
 | | |
 |---|---|
 | ![System Architecture](docs/diagrams/system-architecture.png) | ![Application Workflow](docs/diagrams/application-workflow.png) |
-| ![Detection Pipeline](docs/diagrams/detection-pipeline.png) | ![Database Schema](docs/diagrams/database-schema.png) |
-| ![Repository Structure](docs/diagrams/repository-structure.png) | |
+| ![Detection Pipeline](docs/diagrams/detection-pipeline.png) | ![Repository Structure](docs/diagrams/repository-structure.png) |
 
 </details>
 
@@ -166,8 +176,8 @@ Exact package versions are pinned in [`requirements.txt`](requirements.txt).
 ```text
 wds/
 │
-├── app.py                  # Flask entrypoint — routes, sessions, auth
-├── camera.py                # Live frame generator for webcam / IP camera
+├── app.py                  # Flask entrypoint — routes, sessions, auth, /detect_frame
+├── camera.py                # Live MJPEG frame generator for the IP camera (/video_feed)
 ├── detector.py               # Loads YOLOv5 + runs inference on a frame
 ├── db_models.py               # SQLAlchemy models: User, Detection
 ├── email_service.py            # Builds & sends the HTML alert email
@@ -286,12 +296,12 @@ The SQLite database (`instance/wds.db`) and its tables are created automatically
 1. **Sign up** for an account, then **log in**.
 2. From the **Dashboard**, jump to **Upload**, **Camera**, or **History**.
 3. **Upload** — pick an image; WDS returns the annotated result with detected classes and confidence scores.
-4. **Camera** — choose *Webcam* or *IP Camera* (with a stream URL, e.g. `http://192.168.x.x:8080/video`), then start the live feed. Detections are drawn on the stream in real time; qualifying threats are saved and alerted automatically.
+4. **Camera** — choose **Webcam** or **IP Camera**. For Webcam, the browser asks for camera permission and streams your local camera directly; for IP Camera, enter a stream URL (e.g. `http://192.168.x.x:8080/video`) and the server pulls the feed instead. Only one feed type is active at a time. Detections are drawn on the feed as they happen; qualifying threats are saved and alerted according to the cooldowns above.
 5. **History** — review every stored detection, newest first.
 
-## Database Schema
+## Database
 
-Two tables, managed by **Flask-SQLAlchemy**:
+Detection events and user accounts are stored in **SQLite**, managed through **Flask-SQLAlchemy**. Two tables:
 
 **`users`**
 
@@ -310,10 +320,8 @@ Two tables, managed by **Flask-SQLAlchemy**:
 | `filename` | String(200) | Snapshot / result filename |
 | `threat` | String(50) | Mapped class, e.g. `Firearm` |
 | `confidence` | Float | 0.0 – 1.0 |
-| `source` | String(50) | `"Image Upload"` or `"Live Camera"` |
+| `source` | String(50) | e.g. `"Image Upload"` or `"Live Camera"` |
 | `timestamp` | DateTime | Defaults to `utcnow` |
-
-An ER-style diagram of this schema is in [`docs/diagrams/database-schema.png`](docs/diagrams/database-schema.png).
 
 ## Testing
 
@@ -341,6 +349,18 @@ The UI ("Signal" theme) is a dark, operations-console aesthetic: mint/cyan for s
 - [ ] Role-based access control
 - [ ] SMS / Telegram alert channels
 - [ ] Mobile companion app
+
+## Deployment Notes
+
+WDS is currently set up for local development and hasn't been deployed or verified in a hosted environment. If you deploy it yourself, keep in mind:
+
+- **Environment variables** (`EMAIL_ADDRESS`, `EMAIL_PASSWORD`, `ALERT_EMAIL`) need to be configured on the hosting platform, not just in a local `.env` file.
+- **Model weights** (`weights/best.pt`) and the `yolov5/` source directory need to be present wherever the app actually runs — they aren't fetched automatically.
+- The app currently runs via Flask's built-in server; for anything beyond local use, a production WSGI server (such as Gunicorn) would need to be added and configured — this isn't set up in the repository yet.
+- **SQLite** and the snapshot/upload folders are stored on local disk. On most cloud platforms this storage isn't persistent across restarts or deploys, so a database and file storage strategy would need to be decided before relying on this in a hosted setting.
+- **IP camera URLs** on a private network (e.g. `192.168.x.x`) are only reachable from the same local network. A cloud-hosted deployment generally cannot reach a camera on your home or office LAN unless you set up additional networking (VPN, port forwarding, a relay, etc.).
+
+None of the above is implemented yet — this section is guidance for anyone deploying the project, not a description of a current deployment.
 
 ## Contributing
 
