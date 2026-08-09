@@ -268,11 +268,16 @@ def video_feed():
     source = 0
 
     if session.get("camera_type") == "ip":
-
         source = session.get("camera_url")
 
+    user = User.query.get(session["user_id"])
+
     return Response(
-        generate_frames(app, source),
+        generate_frames(
+            app,
+            source,
+            recipient=user.email
+        ),
         mimetype="multipart/x-mixed-replace; boundary=frame"
     )
 
@@ -314,10 +319,13 @@ def detect_frame():
             "error": "Invalid image"
         }), 400
 
+    user = User.query.get(session["user_id"])
+
     rendered, detections = process_detected_frame(
         frame,
         app,
-        source="Webcam"
+        source="Webcam",
+        recipient=user.email
     )
 
     success, buffer = cv2.imencode(
