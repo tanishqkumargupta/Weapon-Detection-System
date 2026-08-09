@@ -33,9 +33,13 @@
           <div class="field-hint">Enter the stream URL for your IP camera.</div>
         </div>
 
-        <button type="submit" class="btn btn-primary">
-          <span class="spinner"></span>
-          <span class="btn-label">Start Detection</span>
+        <button
+            type="button"
+            class="btn btn-primary"
+            data-start-detection
+        >
+            <span class="spinner"></span>
+            <span class="btn-label">Start Detection</span>
         </button>
       </form>
     </div>
@@ -46,22 +50,83 @@
       </div>
 
       <div class="feed-frame">
-        <span class="feed-overlay-tag"><span class="status-dot"></span>Live</span>
-        <div class="corner-frame">
-          <span></span><span></span><span></span><span></span>
+
+    <!-- Hidden source used to capture webcam frames -->
+          <video
+             data-webcam-video
+             autoplay
+             playsinline
+             muted
+          ></video>
+
+    <!-- Single visible processed detection view -->
+          <canvas
+              data-detection-canvas
+          ></canvas>
+
+    <!-- IP camera detection stream -->
+          <img
+              data-feed-img
+              alt="Live detection feed"
+          >
+
+          <div
+              class="feed-placeholder is-visible"
+              data-feed-placeholder
+          >
+             <svg
+                 viewBox="0 0 24 24"
+                 fill="none"
+                 stroke="currentColor"
+                 stroke-width="1.5"
+            >
+                 <rect
+                     x="2"
+                     y="6"
+                     width="14"
+                     height="12"
+                     rx="2"
+                />
+
+                  <path
+                     d="M16 10l6-3v10l-6-3"
+                  />
+            </svg>
+
+            <div>
+                 <strong>
+                     Camera Offline
+                </strong>
+
+                <p>
+                    Start the live detection feed
+                    to begin.
+                </p>
+            </div>
         </div>
-        <img data-feed-img data-src="{{ url_for('video_feed') }}" alt="Live detection feed">
-        <div class="feed-placeholder" data-feed-placeholder>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/></svg>
-          <div>
-            <strong>Feed unavailable</strong>
-            <p>No camera source could be reached from this environment.</p>
-          </div>
-        </div>
+
       </div>
 
       <div class="feed-controls">
-        <button type="button" class="btn btn-secondary" data-feed-toggle>Start Live Feed</button>
+
+          <button
+             type="button"
+             class="btn btn-primary"
+             data-start-detection
+          >
+             <span class="btn-label">
+                 Start Detection
+              </span>
+          </button>
+
+          <button
+             type="button"
+              class="btn btn-secondary"
+              data-feed-toggle
+          >
+              Start Live Feed
+          </button>
+
       </div>
     </div>
   </div>
