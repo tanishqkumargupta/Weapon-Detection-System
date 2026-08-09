@@ -270,7 +270,6 @@ cp .env.example .env
 ```env
 EMAIL_ADDRESS=your_email@gmail.com
 EMAIL_PASSWORD=your_google_app_password
-ALERT_EMAIL=recipient@example.com
 ```
 
 | Variable | Purpose |
