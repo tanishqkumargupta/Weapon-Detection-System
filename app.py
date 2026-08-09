@@ -11,13 +11,18 @@ import numpy as np
 from detector import detect
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
+from pathlib import Path
 
 load_dotenv()
 
 app = Flask(__name__)
 
-UPLOAD_FOLDER = "uploads"
-RESULT_FOLDER = "static/results"
+BASE_DIR = Path(__file__).resolve().parent
+UPLOAD_FOLDER = BASE_DIR / "uploads"
+RESULT_FOLDER = BASE_DIR / "static" / "results"
+
+UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
+RESULT_FOLDER.mkdir(parents=True, exist_ok=True)
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.config["RESULT_FOLDER"] = RESULT_FOLDER
