@@ -13,6 +13,10 @@ Upload an image or go live, and WDS detects firearms, knives, and blunt weapons 
 ![SQLite](https://img.shields.io/badge/Database-SQLite-07405E?logo=sqlite&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-2ea44f)
 
+### 🌐 Live Demo
+
+**[Launch WDS](https://weapon-detection-system-1djn.onrender.com)**
+
 </div>
 
 ---
@@ -273,9 +277,9 @@ ALERT_EMAIL=recipient@example.com
 |---|---|
 | `EMAIL_ADDRESS` | Gmail account WDS sends alerts **from** |
 | `EMAIL_PASSWORD` | Gmail **App Password** (not your regular password) |
-| `ALERT_EMAIL` | Address that receives threat notifications |
 
 If these aren't set, detection and storage still work — `email_service.py` simply logs `"Email credentials not configured."` and skips sending.
+Alert notifications are sent to the email address associated with the currently logged-in WDS user.
 
 ## Running the App
 
@@ -352,15 +356,26 @@ The UI ("Signal" theme) is a dark, operations-console aesthetic: mint/cyan for s
 
 ## Deployment Notes
 
-WDS is currently set up for local development and hasn't been deployed or verified in a hosted environment. If you deploy it yourself, keep in mind:
+WDS is deployed as a Flask web application using Gunicorn on Render.
 
-- **Environment variables** (`EMAIL_ADDRESS`, `EMAIL_PASSWORD`, `ALERT_EMAIL`) need to be configured on the hosting platform, not just in a local `.env` file.
-- **Model weights** (`weights/best.pt`) and the `yolov5/` source directory need to be present wherever the app actually runs — they aren't fetched automatically.
-- The app currently runs via Flask's built-in server; for anything beyond local use, a production WSGI server (such as Gunicorn) would need to be added and configured — this isn't set up in the repository yet.
-- **SQLite** and the snapshot/upload folders are stored on local disk. On most cloud platforms this storage isn't persistent across restarts or deploys, so a database and file storage strategy would need to be decided before relying on this in a hosted setting.
-- **IP camera URLs** on a private network (e.g. `192.168.x.x`) are only reachable from the same local network. A cloud-hosted deployment generally cannot reach a camera on your home or office LAN unless you set up additional networking (VPN, port forwarding, a relay, etc.).
+### Current Deployment
 
-None of the above is implemented yet — this section is guidance for anyone deploying the project, not a description of a current deployment.
+- **Platform:** Render
+- **Runtime:** Python 3.12
+- **Application Server:** Gunicorn
+- **ML Inference:** YOLOv5 + PyTorch (CPU)
+- **Database:** SQLite
+- **Storage:** Local filesystem
+- **Model:** `weights/best.pt`
+
+### Important Deployment Considerations
+
+- Environment variables such as `EMAIL_ADDRESS` and `EMAIL_PASSWORD` must be configured on the hosting platform.
+- The trained model weights and YOLOv5 source must be included with the deployed application.
+- SQLite and uploaded/snapshot files use the local filesystem and may not persist across cloud service restarts or redeployments.
+- CPU-only YOLOv5 inference can be significantly slower on free hosting compared with a local development machine.
+- IP cameras using private LAN addresses such as `192.168.x.x` are generally not reachable from a cloud-hosted server unless the camera is exposed through an appropriate network/relay solution.
+- The application is designed primarily as a portfolio/demo deployment rather than a production-grade surveillance platform.
 
 ## Contributing
 
@@ -376,6 +391,8 @@ Licensed under the **MIT License**.
 
 **Tanishq Kumar Gupta**
 Computer Science Engineering — AI · Computer Vision · Full-Stack Development
+
+> **Note:** WDS is a portfolio/educational project and is not intended to replace certified security or surveillance systems.
 
 [GitHub](https://github.com/tanishqkumargupta)
 
