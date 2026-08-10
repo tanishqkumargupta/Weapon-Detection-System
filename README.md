@@ -386,6 +386,7 @@ Licensed under the **MIT License**.
 
 ---
 
+## Contributor
 
 **Tanishq Kumar Gupta**
 [GitHub](https://github.com/tanishqkumargupta)
