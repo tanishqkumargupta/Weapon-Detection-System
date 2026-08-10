@@ -386,15 +386,13 @@ Licensed under the **MIT License**.
 
 ---
 
-<div align="center">
 
 **Tanishq Kumar Gupta**
-Computer Science Engineering — AI · Computer Vision · Full-Stack Development
-
-> **Note:** WDS is a portfolio/educational project and is not intended to replace certified security or surveillance systems.
-
 [GitHub](https://github.com/tanishqkumargupta)
+
+**Shivam Patil**
+[GitHub](https://github.com/shivampatil301205)
 
 ⭐ If this project is useful to you, consider giving it a star.
 
-</div>
+
